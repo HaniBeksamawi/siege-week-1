@@ -230,9 +230,10 @@
 <!-- SETTINGS PAGE -->
 <div id="settingsCard" class="card" style="display:none;">
   <h2>Settings</h2>
-  <button id="deleteAllBtn" class="btn" style="background:#e67e22;">Delete All Expenses</button><br>
-  <button id="deleteAccountBtn" class="btn" style="background:#e74c3c;">Delete Account</button><br>
-  <button id="backSettingsBtn" class="btn" style="background:#555;">Back</button>
+  <button id="deleteAllBtn" class="btn" style="background:#e67e22; display:block; width:80%; margin:10px auto;">Delete All Expenses</button>
+  <button id="deleteHistoryBtn" class="btn" style="background:#e67e22; display:block; width:80%; margin:10px auto;">Delete All History</button>
+  <button id="deleteAccountBtn" class="btn" style="background:#e74c3c; display:block; width:80%; margin:10px auto;">Delete Account</button>
+  <button id="backSettingsBtn" class="btn" style="background:#555; display:block; width:80%; margin:10px auto;">Back</button>
 </div>
 
 <!-- TABLE CARD -->
@@ -275,6 +276,7 @@
         showGraphBtn=document.getElementById('showGraphBtn'),
         addExpenseBtn=document.getElementById('addExpenseBtn'),
         deleteAllBtn=document.getElementById('deleteAllBtn'),
+        deleteHistoryBtn=document.getElementById('deleteHistoryBtn'),
         deleteAccountBtn=document.getElementById('deleteAccountBtn'),
         expensesTbody=document.getElementById('expensesTbody'),
         dateInput=document.getElementById('dateInput'),
@@ -369,13 +371,13 @@
       const exp=data.expenses.find(exp=>exp.id==editingIndex);
       exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Edited expense: ${name} - ${price.toFixed(2)} in category ${cat} on ${d}`);
+      data.history.push(`${timestamp} - Edited expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
       editingIndex=null; addExpenseBtn.textContent='Add Expense';
     }else{
       const id=Date.now()+Math.random();
       data.expenses.push({id,date:d,category:cat,name:name,price:price});
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Added expense: ${name} - ${price.toFixed(2)} in category ${cat} on ${d}`);
+      data.history.push(`${timestamp} - Added expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
     }
     setUserData(currentUser,data); renderExpenses(); updateGraph();
     dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
@@ -397,7 +399,7 @@
     if(confirm('Delete this expense?')){
       data.expenses=data.expenses.filter(exp=>exp.id!=id);
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Deleted expense: ${e.name} - ${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
+      data.history.push(`${timestamp} - Deleted expense: ${e.name} - $${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
       setUserData(currentUser,data); renderExpenses();
     }
   };
@@ -411,6 +413,17 @@
       const timestamp=new Date().toLocaleString();
       data.history.push(`${timestamp} - Deleted all expenses`);
       setUserData(currentUser,data); editingIndex=null; addExpenseBtn.textContent='Add Expense'; renderExpenses();
+    }
+  };
+
+  deleteHistoryBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('Delete ALL history?')){
+      let data=getUserData(currentUser);
+      data.history=[];
+      setUserData(currentUser,data);
+      alert('All history deleted!');
+      renderHistory();
     }
   };
 
