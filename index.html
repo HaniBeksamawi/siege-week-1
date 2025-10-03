@@ -208,6 +208,15 @@
   <button id="backHomeBtn" class="btn" style="background:#555;">Back Home</button>
 </div>
 
+<!-- HISTORY CARD -->
+<div id="historyCard" class="card" style="display:none;">
+    <h2 style="text-align:center;">History</h2>
+    <button id="backHistoryBtn" class="btn" style="background:#555; position:absolute; top:20px; left:20px;">Back Home</button>
+    <div id="historyLog" style="width:90%; max-width:900px; margin:60px auto; background:#fff; border:1px solid #ccc; border-radius:8px; padding:10px; text-align:left; font-size:12px; overflow-y:auto; height:70%;">
+      <p class="muted">No actions recorded yet.</p>
+    </div>
+</div>
+
 <!-- GRAPH SECTION -->
 <div id="graphSection" class="card" style="display:none;">
   <h2>Expense Graph</h2>
@@ -280,7 +289,11 @@
         backTableBtn=document.getElementById('backTableBtn'),
         taskManagerBtn=document.getElementById('taskManagerBtn'),
         taskManagerCard=document.getElementById('taskManagerCard'),
-        backTaskManagerBtn=document.getElementById('backTaskManagerBtn');
+        backTaskManagerBtn=document.getElementById('backTaskManagerBtn'),
+        historyBtn = document.getElementById('historyBtn'),
+        historyCard = document.getElementById('historyCard'),
+        backHistoryBtn = document.getElementById('backHistoryBtn'),
+        historyLog = document.getElementById('historyLog');
 
   let currentUser=null, chart=null, editingIndex=null;
 
@@ -289,6 +302,28 @@
   function setUserData(u,d){localStorage.setItem(userKey(u),JSON.stringify(d)); }
   function escapeHtml(t){return t.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
 
+  // --- HISTORY FUNCTIONS ---
+  function addHistoryEntry(action){
+    if(!currentUser) return;
+    const data=getUserData(currentUser);
+    if(!data.history) data.history=[];
+    const timestamp=new Date().toLocaleString();
+    data.history.push(`${timestamp} - ${action}`);
+    setUserData(currentUser,data);
+  }
+
+  function renderHistory(){
+    if(!currentUser) return;
+    const data=getUserData(currentUser);
+    if(!data.history || data.history.length===0){
+      historyLog.innerHTML='<p class="muted">No actions recorded yet.</p>';
+    } else {
+      // show newest first
+      const reversed = data.history.slice().reverse();
+      historyLog.innerHTML = reversed.map(h=>`<p>${escapeHtml(h)}</p>`).join('');
+    }
+  }
+
   toSignup.onclick=()=>{loginCard.style.display='none'; signupCard.style.display='block';};
   toLogin.onclick=()=>{signupCard.style.display='none'; loginCard.style.display='block';};
 
@@ -296,7 +331,7 @@
     const u=document.getElementById('signupUser').value.trim(), p=document.getElementById('signupPass').value;
     if(!u||!p)return alert('Fill in both fields');
     if(localStorage.getItem(userKey(u)))return alert('Username already exists');
-    setUserData(u,{password:p,expenses:[]}); alert('Account created!'); signupCard.style.display='none'; loginCard.style.display='block';
+    setUserData(u,{password:p,expenses:[],history:[]}); alert('Account created!'); signupCard.style.display='none'; loginCard.style.display='block';
   };
 
   loginBtn.onclick=()=>{
@@ -304,24 +339,24 @@
     const data=getUserData(u);
     if(!data||data.password!==p)return alert('Invalid credentials');
     currentUser=u; loginCard.style.display='none'; homeCard.style.display='block';
+    renderHistory();
   };
 
   logoutBtn.onclick=()=>{currentUser=null; homeCard.style.display='none'; loginCard.style.display='block';};
 
   openTracker.onclick=()=>{homeCard.style.display='none'; trackerCard.style.display='block'; renderExpenses();};
-  backHomeBtn.onclick=()=>{trackerCard.style.display='none'; homeCard.style.display='block';};
+  backHomeBtn.onclick=()=>{trackerCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
   settingsBtn.onclick=()=>{homeCard.style.display='none'; settingsCard.style.display='block';};
-  backSettingsBtn.onclick=()=>{settingsCard.style.display='none'; homeCard.style.display='block';};
+  backSettingsBtn.onclick=()=>{settingsCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
   showGraphBtn.onclick=()=>{trackerCard.style.display='none'; graphSection.style.display='block'; updateGraph();};
   backTrackerBtn.onclick=()=>{graphSection.style.display='none'; trackerCard.style.display='block';};
 
-  backTableBtn.onclick=()=>{tableCard.style.display='none'; homeCard.style.display='block';};
+  backTableBtn.onclick=()=>{tableCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
-  // Task Manager navigation
   taskManagerBtn.onclick=()=>{homeCard.style.display='none'; taskManagerCard.style.display='block';};
-  backTaskManagerBtn.onclick=()=>{taskManagerCard.style.display='none'; homeCard.style.display='block';};
+  backTaskManagerBtn.onclick=()=>{taskManagerCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
   addExpenseBtn.onclick=()=>{
     if(!currentUser)return;
@@ -331,13 +366,54 @@
     if(editingIndex!==null){
       const exp=data.expenses.find(exp=>exp.id==editingIndex);
       exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
+      addHistoryEntry(`Edited expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
       editingIndex=null; addExpenseBtn.textContent='Add Expense';
     }else{
       const id=Date.now()+Math.random();
       data.expenses.push({id,date:d,category:cat,name:name,price:price});
+      addHistoryEntry(`Added expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
     }
     setUserData(currentUser,data); renderExpenses(); updateGraph();
     dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
+  };
+
+  window.editExpense=function(id){
+    if(editingIndex!==null) return alert('Finish current update first!');
+    const data=getUserData(currentUser); if(!data) return;
+    const e=data.expenses.find(exp=>exp.id==id); if(!e)return;
+    dateInput.value=e.date; categoryInput.value=e.category; nameInput.value=e.name; priceInput.value=e.price;
+    editingIndex=id; addExpenseBtn.textContent='Update Expense';
+  };
+
+  window.deleteExpense=function(id){
+    if(editingIndex!==null) return alert('Finish current update first!');
+    const data=getUserData(currentUser); if(!data) return;
+    const e=data.expenses.find(exp=>exp.id==id);
+    if(confirm('Delete this expense?')){
+      data.expenses=data.expenses.filter(exp=>exp.id!=id);
+      addHistoryEntry(`Deleted expense: ${e.name} - $${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
+      setUserData(currentUser,data); renderExpenses();
+    }
+  };
+
+  deleteAllBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('Delete ALL expenses?')){
+      const data=getUserData(currentUser);
+      data.expenses=[];
+      addHistoryEntry('Deleted all expenses');
+      setUserData(currentUser,data); editingIndex=null; addExpenseBtn.textContent='Add Expense'; renderExpenses();
+    }
+  };
+
+  deleteAccountBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('DELETE ACCOUNT?')){
+      addHistoryEntry('Account deleted');
+      localStorage.removeItem(userKey(currentUser));
+      currentUser=null; editingIndex=null; addExpenseBtn.textContent='Add Expense'; chart&&(chart.destroy(),chart=null);
+      loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; settingsCard.style.display='none'; graphSection.style.display='none'; tableCard.style.display='none'; taskManagerCard.style.display='none';
+    }
   };
 
   function renderExpenses(){
@@ -358,26 +434,6 @@
     updateGraph();
   }
 
-  window.editExpense=function(id){
-    if(editingIndex!==null) return alert('Finish current update first!');
-    const data=getUserData(currentUser); if(!data) return;
-    const e=data.expenses.find(exp=>exp.id==id); if(!e)return;
-    dateInput.value=e.date; categoryInput.value=e.category; nameInput.value=e.name; priceInput.value=e.price;
-    editingIndex=id; addExpenseBtn.textContent='Update Expense';
-  };
-
-  window.deleteExpense=function(id){
-    if(editingIndex!==null) return alert('Finish current update first!');
-    const data=getUserData(currentUser); if(!data) return;
-    if(confirm('Delete this expense?')){
-      data.expenses=data.expenses.filter(exp=>exp.id!=id);
-      setUserData(currentUser,data); renderExpenses();
-    }
-  };
-
-  deleteAllBtn.onclick=()=>{if(!currentUser)return; if(confirm('Delete ALL expenses?')){const data=getUserData(currentUser); data.expenses=[]; setUserData(currentUser,data); editingIndex=null; addExpenseBtn.textContent='Add Expense'; renderExpenses();}};
-  deleteAccountBtn.onclick=()=>{if(!currentUser)return; if(confirm('DELETE ACCOUNT?')){localStorage.removeItem(userKey(currentUser)); currentUser=null; editingIndex=null; addExpenseBtn.textContent='Add Expense'; chart&&(chart.destroy(),chart=null); loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; settingsCard.style.display='none'; graphSection.style.display='none'; tableCard.style.display='none'; taskManagerCard.style.display='none';}};
-
   function updateGraph(filtered){
     if(!currentUser)return;
     const data=getUserData(currentUser); if(!data)return;
@@ -386,7 +442,17 @@
     chart&&chart.destroy();
     chart=new Chart(expenseChart.getContext('2d'),{type:'line',data:{labels:list.map(e=>e.date),datasets:[{label:'Expense ($)',data:list.map(e=>e.price),fill:false,borderColor:'#3498db',tension:0.1}]},options:{responsive:true,plugins:{legend:{display:true}}}});
   }
-  applyFilterBtn.onclick=()=>{if(!currentUser)return; const from=fromDate.value?new Date(fromDate.value):null; const to=toDate.value?new Date(toDate.value):null; const data=getUserData(currentUser); if(!data)return; const filtered=data.expenses.filter(e=>{const d=new Date(e.date); if(from && d<from) return false; if(to && d>to) return false; return true;}); updateGraph(filtered);};
+
+  applyFilterBtn.onclick=()=>{
+    if(!currentUser)return;
+    const from=fromDate.value?new Date(fromDate.value):null;
+    const to=toDate.value?new Date(toDate.value):null;
+    const data=getUserData(currentUser); if(!data)return;
+    const filtered=data.expenses.filter(e=>{
+      const d=new Date(e.date); if(from && d<from) return false; if(to && d>to) return false; return true;
+    });
+    updateGraph(filtered);
+  };
 
   function renderFullTable(){
     if(!currentUser)return;
@@ -403,8 +469,12 @@
     if(sorted.length===0)fullTableTbody.innerHTML=`<tr><td colspan="4" class="muted">No expenses yet</td></tr>`;
   }
 
+  // --- HISTORY NAVIGATION ---
+  historyBtn.onclick = () => { homeCard.style.display='none'; historyCard.style.display='block'; renderHistory(); };
+  backHistoryBtn.onclick = () => { historyCard.style.display='none'; homeCard.style.display='block'; renderHistory(); };
+
 })();
-    function updateDateTime() {
+function updateDateTime() {
   const now = new Date();
   const options = { 
     weekday: 'short', year: 'numeric', month: 'short', 
@@ -414,72 +484,6 @@
 }
 setInterval(updateDateTime, 1000);
 updateDateTime(); // run once at start
-// Reference the new History elements
-const historyBtn = document.getElementById('historyBtn'),
-      historyCard = document.getElementById('historyCard'),
-      backHistoryBtn = document.getElementById('backHistoryBtn'),
-      historyLog = document.getElementById('historyLog');
-
-// Function to log actions
-function logHistory(action){
-    const now = new Date().toLocaleString();
-    const entry = document.createElement('p');
-    entry.textContent = `[${now}] ${action}`;
-    historyLog.prepend(entry); // newest on top
-}
-
-// Show history card
-historyBtn.onclick = () => {
-    homeCard.style.display = 'none';
-    historyCard.style.display = 'block';
-};
-
-// Back to home from history
-backHistoryBtn.onclick = () => {
-    historyCard.style.display = 'none';
-    homeCard.style.display = 'block';
-};
-
-// Example: add logging to existing actions
-addExpenseBtn.onclick = () => {
-    if(!currentUser) return;
-    const d=dateInput.value, cat=categoryInput.value.trim(), name=nameInput.value.trim(), price=parseFloat(priceInput.value);
-    if(!d || !cat || !name || isNaN(price)) return alert('Fill all fields correctly');
-    const data=getUserData(currentUser);
-    if(editingIndex!==null){
-        const exp=data.expenses.find(exp=>exp.id==editingIndex);
-        exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
-        editingIndex=null; addExpenseBtn.textContent='Add Expense';
-        logHistory(`Edited expense: ${name}, $${price}`);
-    } else {
-        const id=Date.now()+Math.random();
-        data.expenses.push({id,date:d,category:cat,name:name,price:price});
-        logHistory(`Added expense: ${name}, $${price}`);
-    }
-    setUserData(currentUser,data); renderExpenses(); updateGraph();
-    dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
-};
-
-// Add logging to deleteAll and deleteAccount
-deleteAllBtn.onclick = () => {
-    if(!currentUser) return;
-    if(confirm('Delete ALL expenses?')){
-        const data=getUserData(currentUser);
-        data.expenses=[]; setUserData(currentUser,data); renderExpenses();
-        logHistory('Deleted ALL expenses');
-    }
-};
-
-deleteAccountBtn.onclick = () => {
-    if(!currentUser) return;
-    if(confirm('DELETE ACCOUNT?')){
-        logHistory(`Deleted account: ${currentUser}`);
-        localStorage.removeItem(userKey(currentUser));
-        currentUser=null; editingIndex=null;
-        loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; settingsCard.style.display='none';
-    }
-};
-
 </script>
 </body>
 </html>
