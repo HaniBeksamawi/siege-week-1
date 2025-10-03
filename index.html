@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flow Navigator Manager</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fb;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  h1 {
+    margin: 20px 0;
+    color: #333;
+  }
+  .card {
+    display: none;
+    background: white;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  input, select {
+    margin: 6px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52,152,219,0.5);
+  }
+  .btn {
+    margin: 6px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #3498db;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    transition: all 0.25s ease;
+  }
+  .btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.25);
+  }
+  .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+  th {
+    background: #3498db;
+    color: white;
+  }
+  td {
+    text-align: center;
+  }
+  .muted {
+    color: gray;
+    font-size: 14px;
+  }
+  #graphSection {
+    margin-top: 20px;
+  }
+
+  /* Task Manager Styles */
+  #taskManagerCard {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    z-index: 1000;
+  }
+  #taskManagerContent {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 75%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 20px;
+    overflow: auto;
+  }
+  #taskManagerCard h2 {
+    text-align: center;
+    margin-top: 0;
+  }
+  #backTaskManagerBtn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: #555;
+  }
+
+  /* History Styles */
+  #historyCard {
+    display: none;
+    background: white;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: left;
+    font-size: 13px;
+    color: #111;
+  }
+  #historyList {
+    list-style: none;
+    padding: 0;
+  }
+  #historyList li {
+    margin: 4px 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 3px;
+  }
+
+  /* Clock */
+  #datetime {
+    position:absolute;
+    top:10px;
+    right:20px;
+    font-size:14px;
+    color:#555;
+  }
+</style>
+</head>
+<body>
+<h1>Multi Manager Tool</h1>
+<div id="datetime"></div>
+
+<!-- LOGIN CARD -->
+<div id="loginCard" class="card" style="display:block;">
+  <h2>Login</h2>
+  <input type="text" id="loginUser" placeholder="Username"><br>
+  <input type="password" id="loginPass" placeholder="Password"><br>
+  <button id="loginBtn" class="btn">Login</button>
+  <p class="muted">Don’t have an account? <a href="#" id="toSignup">Sign up</a></p>
+</div>
+
+<!-- SIGNUP CARD -->
+<div id="signupCard" class="card">
+  <h2>Sign Up</h2>
+  <input type="text" id="signupUser" placeholder="Choose Username"><br>
+  <input type="password" id="signupPass" placeholder="Choose Password"><br>
+  <button id="signupBtn" class="btn">Sign Up</button>
+  <p class="muted">Already have an account? <a href="#" id="toLogin">Login</a></p>
+</div>
+
+<!-- HOME CARD -->
+<div id="homeCard" class="card">
+  <h2>Welcome</h2>
+  <button id="openTracker" class="btn">Open Expense Tracker</button>
+  <button id="settingsBtn" class="btn" style="background:#555;">Settings</button>
+  <button id="logoutBtn" class="btn" style="background:#e74c3c;">Log out</button>
+  <button id="taskManagerBtn" class="btn" style="background:#2ecc71;">Task Manager</button>
+</div>
+
+<!-- TASK MANAGER CARD -->
+<div id="taskManagerCard">
+  <div id="taskManagerContent">
+    <h2>Task Manager</h2>
+    <button id="backTaskManagerBtn" class="btn">Back Home</button>
+    <div style="width:100%; height:calc(100% - 60px); background:#fff; border:1px solid #ccc; border-radius:8px; margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- TRACKER CARD -->
+<div id="trackerCard" class="card">
+  <h2>Expense Tracker</h2>
+  <div>
+    <input type="date" id="dateInput">
+    <input type="text" id="categoryInput" placeholder="Category">
+    <input type="text" id="nameInput" placeholder="Name">
+    <input type="number" id="priceInput" placeholder="Price">
+    <button id="addExpenseBtn" class="btn">Add Expense</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="expensesTbody"></tbody>
+  </table>
+  <button id="showGraphBtn" class="btn">Graph Analysis</button>
+  <button id="backHomeBtn" class="btn" style="background:#555;">Back Home</button>
+</div>
+
+<!-- GRAPH SECTION -->
+<div id="graphSection" class="card" style="display:none;">
+  <h2>Expense Graph</h2>
+  <label>From: <input type="date" id="fromDate"></label>
+  <label>To: <input type="date" id="toDate"></label>
+  <button id="applyFilterBtn" class="btn">Apply Filter</button>
+  <canvas id="expenseChart" width="400" height="200"></canvas>
+  <button id="backTrackerBtn" class="btn" style="background:#555;">Back</button>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div id="settingsCard" class="card" style="display:none;">
+  <h2>Settings</h2>
+  <button id="deleteAllBtn" class="btn" style="background:#e67e22;">Delete All Expenses</button><br>
+  <button id="deleteAccountBtn" class="btn" style="background:#e74c3c;">Delete Account</button><br>
+  <button id="historyBtn" class="btn" style="background:#8e44ad;">History</button><br>
+  <button id="backSettingsBtn" class="btn" style="background:#555;">Back</button>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="historyCard" class="card">
+  <h2>History</h2>
+  <ul id="historyList"></ul>
+  <button id="backHistoryBtn" class="btn" style="background:#555;">Back</button>
+</div>
+
+<!-- TABLE CARD -->
+<div id="tableCard" class="card" style="display:none;">
+  <h2>Full Expense Table</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Name</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody id="fullTableTbody"></tbody>
+  </table>
+  <button id="backTableBtn" class="btn" style="background:#555;">Back</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function(){
+  const loginCard=document.getElementById('loginCard'),
+        signupCard=document.getElementById('signupCard'),
+        homeCard=document.getElementById('homeCard'),
+        trackerCard=document.getElementById('trackerCard'),
+        graphSection=document.getElementById('graphSection'),
+        settingsCard=document.getElementById('settingsCard'),
+        tableCard=document.getElementById('tableCard'),
+        loginBtn=document.getElementById('loginBtn'),
+        signupBtn=document.getElementById('signupBtn'),
+        toSignup=document.getElementById('toSignup'),
+        toLogin=document.getElementById('toLogin'),
+        openTracker=document.getElementById('openTracker'),
+        logoutBtn=document.getElementById('logoutBtn'),
+        settingsBtn=document.getElementById('settingsBtn'),
+        backSettingsBtn=document.getElementById('backSettingsBtn'),
+        backHomeBtn=document.getElementById('backHomeBtn'),
+        backTrackerBtn=document.getElementById('backTrackerBtn'),
+        showGraphBtn=document.getElementById('showGraphBtn'),
+        addExpenseBtn=document.getElementById('addExpenseBtn'),
+        deleteAllBtn=document.getElementById('deleteAllBtn'),
+        deleteAccountBtn=document.getElementById('deleteAccountBtn'),
+        expensesTbody=document.getElementById('expensesTbody'),
+        dateInput=document.getElementById('dateInput'),
+        categoryInput=document.getElementById('categoryInput'),
+        nameInput=document.getElementById('nameInput'),
+        priceInput=document.getElementById('priceInput'),
+        fromDate=document.getElementById('fromDate'),
+        toDate=document.getElementById('toDate'),
+        applyFilterBtn=document.getElementById('applyFilterBtn'),
+        expenseChart=document.getElementById('expenseChart'),
+        fullTableTbody=document.getElementById('fullTableTbody'),
+        backTableBtn=document.getElementById('backTableBtn'),
+        taskManagerBtn=document.getElementById('taskManagerBtn'),
+        taskManagerCard=document.getElementById('taskManagerCard'),
+        backTaskManagerBtn=document.getElementById('backTaskManagerBtn'),
+        historyBtn=document.getElementById('historyBtn'),
+        historyCard=document.getElementById('historyCard'),
+        historyList=document.getElementById('historyList'),
+        backHistoryBtn=document.getElementById('backHistoryBtn');
+
+  let currentUser=null, chart=null, editingIndex=null;
+
+  const tableBtn=document.createElement('button');
+  tableBtn.id='tableBtn'; tableBtn.className='btn'; tableBtn.textContent='Table';
+  homeCard.insertBefore(tableBtn, logoutBtn);
+
+  // ---------------- Clock ----------------
+  function updateDateTime() {
+    const now = new Date();
+    const options = { weekday: 'short', year: 'numeric', month: 'short', 
+      day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    document.getElementById('datetime').textContent = now.toLocaleString('en-US', options);
+  }
+  setInterval(updateDateTime, 1000);
+  updateDateTime();
+
+  // ---------------- History ----------------
+  function logHistory(action){
+    const time=new Date().toLocaleString();
+    const li=document.createElement('li');
+    li.textContent=`${time}: ${action}`;
+    historyList.prepend(li);
+  }
+
+  // ---------------- Auth ----------------
+  function userKey(u){return 'user_'+u;}
+  function getUserData(u){return JSON.parse(localStorage.getItem(userKey(u))); }
+  function setUserData(u,d){localStorage.setItem(userKey(u),JSON.stringify(d)); }
+  function escapeHtml(t){return t.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
+
+  toSignup.onclick=()=>{loginCard.style.display='none'; signupCard.style.display='block';};
+  toLogin.onclick=()=>{signupCard.style.display='none'; loginCard.style.display='block';};
+
+  signupBtn.onclick=()=>{
+    const u=document.getElementById('signupUser').value.trim(), p=document.getElementById('signupPass').value;
+    if(!u||!p)return alert('Fill in both fields');
+    if(localStorage.getItem(userKey(u)))return alert('Username already exists');
+    setUserData(u,{password:p,expenses:[]}); alert('Account created!'); signupCard.style.display='none'; loginCard.style.display='block';
+  };
+
+  loginBtn.onclick=()=>{
+    const u=document.getElementById('loginUser').value.trim(), p=document.getElementById('loginPass').value;
+    const data=getUserData(u);
+    if(!data||data.password!==p)return alert('Invalid credentials');
+    currentUser=u; loginCard.style.display='none'; homeCard.style.display='block';
+  };
+
+  logoutBtn.onclick=()=>{currentUser=null; homeCard.style.display='none'; loginCard.style.display='block';};
+
+  openTracker.onclick=()=>{homeCard.style.display='none'; trackerCard.style.display='block'; renderExpenses();};
+  backHomeBtn.onclick=()=>{trackerCard.style.display='none'; homeCard.style.display='block';};
+
+  settingsBtn.onclick=()=>{homeCard.style.display='none'; settingsCard.style.display='block';};
+  backSettingsBtn.onclick=()=>{settingsCard.style.display='none'; homeCard.style.display='block';};
+
+  historyBtn.onclick=()=>{settingsCard.style.display='none'; historyCard.style.display='block';};
+  backHistoryBtn.onclick=()=>{historyCard.style.display='none'; settingsCard.style.display='block';};
+
+  showGraphBtn.onclick=()=>{trackerCard.style.display='none'; graphSection.style.display='block'; updateGraph();};
+  backTrackerBtn.onclick=()=>{graphSection.style.display='none'; trackerCard.style.display='block';};
+
+  tableBtn.onclick=()=>{if(!currentUser)return; renderFullTable(); homeCard.style.display='none'; tableCard.style.display='block';};
+  backTableBtn.onclick=()=>{tableCard.style.display='none'; homeCard.style.display='block';};
+
+  // Task Manager navigation
+  taskManagerBtn.onclick=()=>{homeCard.style.display='none'; taskManagerCard.style.display='block';};
+  backTaskManagerBtn.onclick=()=>{taskManagerCard.style.display='none'; homeCard.style.display='block';};
+
+  // ---------------- Expenses ----------------
+  addExpenseBtn.onclick=()=>{
+    if(!currentUser)return;
+    const d=dateInput.value, cat=categoryInput.value.trim(), name=nameInput.value.trim(), price=parseFloat(priceInput.value);
+    if(!d||!cat||!name||isNaN(price))return alert('Fill all fields correctly');
+    const data=getUserData(currentUser);
+    if(editingIndex!==null){
+      const exp=data.expenses.find(exp=>exp.id==editingIndex);
+      exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
+      logHistory(`Edited expense: ${name}, $${price}`);
+      editingIndex=null; addExpenseBtn.textContent='Add Expense';
+    }else{
+      const id=Date.now()+Math.random();
+      data.expenses.push({id,date:d,category:cat,name:name,price:price});
+      logHistory(`Added expense: ${name}, $${price}`);
+    }
+    setUserData(currentUser,data); renderExpenses(); updateGraph();
+    dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
+  };
+
+  function renderExpenses(){
+    if(!currentUser)return;
+    const data=getUserData(currentUser)||{expenses:[]};
+    const sorted=data.expenses.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    expensesTbody.innerHTML=sorted.map(e=>`<tr>
+      <td>${escapeHtml(e.date)}</td>
+      <td>${escapeHtml(e.category)}</td>
+      <td>${escapeHtml(e.name)}</td>
+      <td style="text-align:right">$${e.price.toFixed(2)}</td>
+      <td>
+        <button class="btn" style="background:#f1c40f;color:#111;padding:6px 10px" onclick="editExpense('${e.id}')" ${editingIndex!==null?'disabled':''}>Edit</button>
+        <button class="btn" style="background:#e74c3c;padding:6px 10px" onclick="deleteExpense('${e.id}')" ${editingIndex!==null?'disabled':''}>Delete</button>
+      </td>
+    </tr>`).join('');
+    if(sorted.length===0)expensesTbody.innerHTML=`<tr><td colspan="5" class="muted">No expenses yet</td></tr>`;
+    updateGraph();
+  }
+
+  window.editExpense=function(id){
+    if(editingIndex!==null) return alert('Finish current update first!');
+    const data=getUserData(currentUser); if(!data) return;
+    const e=data.expenses.find(exp=>exp.id==id); if(!e)return;
+    dateInput.value=e.date; categoryInput.value=e.category; nameInput.value=e.name; priceInput.value=e.price;
+    editingIndex=id; addExpenseBtn.textContent='Update Expense';
+  };
+
+  window.deleteExpense=function(id){
+    if(editingIndex!==null) return alert('Finish current update first!');
+    const data=getUserData(currentUser); if(!data) return;
+    if(confirm('Delete this expense?')){
+      data.expenses=data.expenses.filter(exp=>exp.id!=id);
+      setUserData(currentUser,data); renderExpenses();
+      logHistory(`Deleted an expense (ID: ${id})`);
+    }
+  };
+
+  deleteAllBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('Delete ALL expenses?')){
+      const data=getUserData(currentUser);
+      data.expenses=[];
+      setUserData(currentUser,data);
+      editingIndex=null;
+      addExpenseBtn.textContent='Add Expense';
+      renderExpenses();
+      logHistory("Deleted ALL expenses");
+    }
+  };
+
+  deleteAccountBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('DELETE ACCOUNT?')){
+      localStorage.removeItem(userKey(currentUser));
+      currentUser=null;
+      editingIndex=null;
+      addExpenseBtn.textContent='Add Expense';
+      chart&&(chart.destroy(),chart=null);
+      loginCard.style.display='block';
+      homeCard.style.display='none';
+      trackerCard.style.display='none';
+      settingsCard.style.display='none';
+      graphSection.style.display='none';
+      tableCard.style.display='none';
+      logHistory("Deleted ACCOUNT");
+    }
+  };
+
+  // ---------------- Graph ----------------
+  function updateGraph(){
+    if(!currentUser)return;
+    const data=getUserData(currentUser); if(!data)return;
+    let expenses=data.expenses;
+    if(fromDate.value) expenses=expenses.filter(e=>new Date(e.date)>=new Date(fromDate.value));
+    if(toDate.value) expenses=expenses.filter(e=>new Date(e.date)<=new Date(toDate.value));
+    const totals={};
+    expenses.forEach(e=>{totals[e.category]=(totals[e.category]||0)+e.price;});
+    const labels=Object.keys(totals), values=Object.values(totals);
+    if(chart)chart.destroy();
+    chart=new Chart(expenseChart,{type:'bar',data:{labels,datasets:[{label:'Expenses by Category',data:values,backgroundColor:'rgba(52,152,219,0.6)',borderColor:'rgba(41,128,185,1)',borderWidth:1}]},options:{scales:{y:{beginAtZero:true}}}});
+  }
+  applyFilterBtn.onclick=updateGraph;
+
+  // ---------------- Full Table ----------------
+  function renderFullTable(){
+    const data=getUserData(currentUser)||{expenses:[]};
+    const sorted=data.expenses.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    fullTableTbody.innerHTML=sorted.map(e=>`<tr>
+      <td>${escapeHtml(e.date)}</td>
+      <td>${escapeHtml(e.category)}</td>
+      <td>${escapeHtml(e.name)}</td>
+      <td style="text-align:right">$${e.price.toFixed(2)}</td>
+    </tr>`).join('');
+    if(sorted.length===0)fullTableTbody.innerHTML=`<tr><td colspan="4" class="muted">No expenses yet</td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>
