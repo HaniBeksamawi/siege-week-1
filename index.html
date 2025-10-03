@@ -152,7 +152,7 @@
   <input type="text" id="loginUser" placeholder="Username"><br>
   <input type="password" id="loginPass" placeholder="Password"><br>
   <button id="loginBtn" class="btn">Login</button>
-  <p class="muted">Don’t have an account? <a href="#" id="toSignup">Sign up</a></p>
+  <p class="muted">Don't have an account? <a href="#" id="toSignup">Sign up</a></p>
 </div>
 
 <!-- SIGNUP CARD -->
@@ -305,7 +305,8 @@
   // --- HISTORY FUNCTIONS ---
   function addHistoryEntry(action){
     if(!currentUser) return;
-    const data=getUserData(currentUser);
+    let data=getUserData(currentUser);
+    if(!data) data = {password:'', expenses:[], history:[]};
     if(!data.history) data.history=[];
     const timestamp=new Date().toLocaleString();
     data.history.push(`${timestamp} - ${action}`);
@@ -315,7 +316,7 @@
   function renderHistory(){
     if(!currentUser) return;
     const data=getUserData(currentUser);
-    if(!data.history || data.history.length===0){
+    if(!data || !data.history || data.history.length===0){
       historyLog.innerHTML='<p class="muted">No actions recorded yet.</p>';
     } else {
       // show newest first
@@ -362,16 +363,19 @@
     if(!currentUser)return;
     const d=dateInput.value, cat=categoryInput.value.trim(), name=nameInput.value.trim(), price=parseFloat(priceInput.value);
     if(!d||!cat||!name||isNaN(price))return alert('Fill all fields correctly');
-    const data=getUserData(currentUser);
+    let data=getUserData(currentUser);
+    if(!data.history) data.history = [];
     if(editingIndex!==null){
       const exp=data.expenses.find(exp=>exp.id==editingIndex);
       exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
-      addHistoryEntry(`Edited expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
+      const timestamp=new Date().toLocaleString();
+      data.history.push(`${timestamp} - Edited expense: ${name} - ${price.toFixed(2)} in category ${cat} on ${d}`);
       editingIndex=null; addExpenseBtn.textContent='Add Expense';
     }else{
       const id=Date.now()+Math.random();
       data.expenses.push({id,date:d,category:cat,name:name,price:price});
-      addHistoryEntry(`Added expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
+      const timestamp=new Date().toLocaleString();
+      data.history.push(`${timestamp} - Added expense: ${name} - ${price.toFixed(2)} in category ${cat} on ${d}`);
     }
     setUserData(currentUser,data); renderExpenses(); updateGraph();
     dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
@@ -387,11 +391,13 @@
 
   window.deleteExpense=function(id){
     if(editingIndex!==null) return alert('Finish current update first!');
-    const data=getUserData(currentUser); if(!data) return;
+    let data=getUserData(currentUser); if(!data) return;
+    if(!data.history) data.history = [];
     const e=data.expenses.find(exp=>exp.id==id);
     if(confirm('Delete this expense?')){
       data.expenses=data.expenses.filter(exp=>exp.id!=id);
-      addHistoryEntry(`Deleted expense: ${e.name} - $${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
+      const timestamp=new Date().toLocaleString();
+      data.history.push(`${timestamp} - Deleted expense: ${e.name} - ${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
       setUserData(currentUser,data); renderExpenses();
     }
   };
@@ -399,9 +405,11 @@
   deleteAllBtn.onclick=()=>{
     if(!currentUser)return;
     if(confirm('Delete ALL expenses?')){
-      const data=getUserData(currentUser);
+      let data=getUserData(currentUser);
+      if(!data.history) data.history = [];
       data.expenses=[];
-      addHistoryEntry('Deleted all expenses');
+      const timestamp=new Date().toLocaleString();
+      data.history.push(`${timestamp} - Deleted all expenses`);
       setUserData(currentUser,data); editingIndex=null; addExpenseBtn.textContent='Add Expense'; renderExpenses();
     }
   };
@@ -409,7 +417,6 @@
   deleteAccountBtn.onclick=()=>{
     if(!currentUser)return;
     if(confirm('DELETE ACCOUNT?')){
-      addHistoryEntry('Account deleted');
       localStorage.removeItem(userKey(currentUser));
       currentUser=null; editingIndex=null; addExpenseBtn.textContent='Add Expense'; chart&&(chart.destroy(),chart=null);
       loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; settingsCard.style.display='none'; graphSection.style.display='none'; tableCard.style.display='none'; taskManagerCard.style.display='none';
