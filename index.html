@@ -30,10 +30,40 @@
     border: 1px solid #ccc;
     border-radius: 8px;
     outline: none;
+    position: relative;
   }
   input:focus, select:focus {
     border-color: #3498db;
     box-shadow: 0 0 5px rgba(52,152,219,0.5);
+  }
+  
+  /* Autocomplete Styles */
+  .autocomplete-container {
+    position: relative;
+    display: inline-block;
+  }
+  .autocomplete-suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .autocomplete-suggestion {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+  }
+  .autocomplete-suggestion:hover {
+    background: #f0f0f0;
+  }
+  .autocomplete-suggestion:last-child {
+    border-bottom: none;
   }
   .btn {
     margin: 6px;
@@ -120,6 +150,11 @@
     display: block;
     margin: 15px auto;
   }
+  #openIncomeTracker {
+    display: block;
+    margin: 15px auto;
+    background: #27ae60;
+  }
   #taskManagerBtn {
     display: block;
     margin: 10px auto;
@@ -175,6 +210,11 @@
     color: #27ae60;
     margin: 3px 0;
   }
+
+  /* Income specific styles */
+  .income-th {
+    background: #27ae60 !important;
+  }
   
 </style>
 </head>
@@ -203,6 +243,7 @@
 <!-- HOME CARD -->
 <div id="homeCard" class="card">
   <button id="openTracker" class="btn">Open Expense Tracker</button>
+  <button id="openIncomeTracker" class="btn" style="background:#27ae60;">Open Income Tracker</button>
   <button id="taskManagerBtn" class="btn" style="background:#2ecc71;">Task Manager</button>
   <button id="logoutBtn" class="btn" style="background:#e74c3c;">Log out</button>
   <button id="settingsBtn" class="btn" style="background:#555;">Settings</button>
@@ -218,14 +259,17 @@
   </div>
 </div>
 
-<!-- TRACKER CARD -->
+<!-- TRACKER CARD (EXPENSES) -->
 <div id="trackerCard" class="card">
   <h2>Expense Tracker</h2>
   <div>
     <input type="date" id="dateInput">
-    <input type="text" id="categoryInput" placeholder="Category">
+    <div class="autocomplete-container" style="display:inline-block;">
+      <input type="text" id="categoryInput" placeholder="Category" autocomplete="off">
+      <div id="categorySuggestions" class="autocomplete-suggestions" style="display:none;"></div>
+    </div>
     <input type="text" id="nameInput" placeholder="Name">
-    <input type="number" id="priceInput" placeholder="Price">
+    <input type="number" id="priceInput" placeholder="Amount">
     <button id="addExpenseBtn" class="btn">Add Expense</button>
   </div>
   <table>
@@ -234,7 +278,7 @@
         <th>Date</th>
         <th>Category</th>
         <th>Name</th>
-        <th>Price</th>
+        <th>Amount</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -242,6 +286,35 @@
   </table>
   <button id="showGraphBtn" class="btn">Graph Analysis</button>
   <button id="backHomeBtn" class="btn" style="background:#555;">Back Home</button>
+</div>
+
+<!-- INCOME TRACKER CARD -->
+<div id="incomeTrackerCard" class="card">
+  <h2>Income Tracker</h2>
+  <div>
+    <input type="date" id="incomeDateInput">
+    <div class="autocomplete-container" style="display:inline-block;">
+      <input type="text" id="incomeCategoryInput" placeholder="Source" autocomplete="off">
+      <div id="incomeSourceSuggestions" class="autocomplete-suggestions" style="display:none;"></div>
+    </div>
+    <input type="text" id="incomeNameInput" placeholder="Description">
+    <input type="number" id="incomeAmountInput" placeholder="Amount">
+    <button id="addIncomeBtn" class="btn" style="background:#27ae60;">Add Income</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="income-th">Date</th>
+        <th class="income-th">Source</th>
+        <th class="income-th">Description</th>
+        <th class="income-th">Amount</th>
+        <th class="income-th">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="incomesTbody"></tbody>
+  </table>
+  <button id="showIncomeGraphBtn" class="btn" style="background:#27ae60;">Graph Analysis</button>
+  <button id="backHomeFromIncomeBtn" class="btn" style="background:#555;">Back Home</button>
 </div>
 
 <!-- HISTORY CARD -->
@@ -253,7 +326,7 @@
     </div>
 </div>
 
-<!-- GRAPH SECTION -->
+<!-- GRAPH SECTION (EXPENSES) -->
 <div id="graphSection" class="card" style="display:none;">
   <h2>Expense Graph</h2>
   <label>From: <input type="date" id="fromDate"></label>
@@ -263,10 +336,21 @@
   <button id="backTrackerBtn" class="btn" style="background:#555;">Back</button>
 </div>
 
+<!-- INCOME GRAPH SECTION -->
+<div id="incomeGraphSection" class="card" style="display:none;">
+  <h2>Income Graph</h2>
+  <label>From: <input type="date" id="incomeFromDate"></label>
+  <label>To: <input type="date" id="incomeToDate"></label>
+  <button id="applyIncomeFilterBtn" class="btn" style="background:#27ae60;">Apply Filter</button>
+  <canvas id="incomeChart" width="400" height="200"></canvas>
+  <button id="backIncomeTrackerBtn" class="btn" style="background:#555;">Back</button>
+</div>
+
 <!-- SETTINGS PAGE -->
 <div id="settingsCard" class="card" style="display:none;">
   <h2>Settings</h2>
   <button id="deleteAllBtn" class="btn" style="background:#e67e22; display:block; width:80%; margin:10px auto;">Delete All Expenses</button>
+  <button id="deleteAllIncomeBtn" class="btn" style="background:#e67e22; display:block; width:80%; margin:10px auto;">Delete All Income</button>
   <button id="deleteHistoryBtn" class="btn" style="background:#e67e22; display:block; width:80%; margin:10px auto;">Delete All History</button>
   <button id="deleteAccountBtn" class="btn" style="background:#e74c3c; display:block; width:80%; margin:10px auto;">Delete Account</button>
   <button id="backSettingsBtn" class="btn" style="background:#555; display:block; width:80%; margin:10px auto;">Back</button>
@@ -281,7 +365,7 @@
         <th>Date</th>
         <th>Category</th>
         <th>Name</th>
-        <th>Price</th>
+        <th>Amount</th>
       </tr>
     </thead>
     <tbody id="fullTableTbody"></tbody>
@@ -296,7 +380,9 @@
         signupCard=document.getElementById('signupCard'),
         homeCard=document.getElementById('homeCard'),
         trackerCard=document.getElementById('trackerCard'),
+        incomeTrackerCard=document.getElementById('incomeTrackerCard'),
         graphSection=document.getElementById('graphSection'),
+        incomeGraphSection=document.getElementById('incomeGraphSection'),
         settingsCard=document.getElementById('settingsCard'),
         tableCard=document.getElementById('tableCard'),
         loginBtn=document.getElementById('loginBtn'),
@@ -304,25 +390,42 @@
         toSignup=document.getElementById('toSignup'),
         toLogin=document.getElementById('toLogin'),
         openTracker=document.getElementById('openTracker'),
+        openIncomeTracker=document.getElementById('openIncomeTracker'),
         logoutBtn=document.getElementById('logoutBtn'),
         settingsBtn=document.getElementById('settingsBtn'),
         backSettingsBtn=document.getElementById('backSettingsBtn'),
         backHomeBtn=document.getElementById('backHomeBtn'),
+        backHomeFromIncomeBtn=document.getElementById('backHomeFromIncomeBtn'),
         backTrackerBtn=document.getElementById('backTrackerBtn'),
+        backIncomeTrackerBtn=document.getElementById('backIncomeTrackerBtn'),
         showGraphBtn=document.getElementById('showGraphBtn'),
+        showIncomeGraphBtn=document.getElementById('showIncomeGraphBtn'),
         addExpenseBtn=document.getElementById('addExpenseBtn'),
+        addIncomeBtn=document.getElementById('addIncomeBtn'),
         deleteAllBtn=document.getElementById('deleteAllBtn'),
+        deleteAllIncomeBtn=document.getElementById('deleteAllIncomeBtn'),
         deleteHistoryBtn=document.getElementById('deleteHistoryBtn'),
         deleteAccountBtn=document.getElementById('deleteAccountBtn'),
         expensesTbody=document.getElementById('expensesTbody'),
+        incomesTbody=document.getElementById('incomesTbody'),
         dateInput=document.getElementById('dateInput'),
         categoryInput=document.getElementById('categoryInput'),
+        categorySuggestions=document.getElementById('categorySuggestions'),
         nameInput=document.getElementById('nameInput'),
         priceInput=document.getElementById('priceInput'),
+        incomeDateInput=document.getElementById('incomeDateInput'),
+        incomeCategoryInput=document.getElementById('incomeCategoryInput'),
+        incomeSourceSuggestions=document.getElementById('incomeSourceSuggestions'),
+        incomeNameInput=document.getElementById('incomeNameInput'),
+        incomeAmountInput=document.getElementById('incomeAmountInput'),
         fromDate=document.getElementById('fromDate'),
         toDate=document.getElementById('toDate'),
+        incomeFromDate=document.getElementById('incomeFromDate'),
+        incomeToDate=document.getElementById('incomeToDate'),
         applyFilterBtn=document.getElementById('applyFilterBtn'),
+        applyIncomeFilterBtn=document.getElementById('applyIncomeFilterBtn'),
         expenseChart=document.getElementById('expenseChart'),
+        incomeChart=document.getElementById('incomeChart'),
         fullTableTbody=document.getElementById('fullTableTbody'),
         backTableBtn=document.getElementById('backTableBtn'),
         taskManagerBtn=document.getElementById('taskManagerBtn'),
@@ -333,7 +436,7 @@
         backHistoryBtn = document.getElementById('backHistoryBtn'),
         historyLog = document.getElementById('historyLog');
 
-  let currentUser=null, chart=null, editingIndex=null;
+  let currentUser=null, chart=null, incomeChartObj=null, editingIndex=null, editingIncomeIndex=null;
 
   function userKey(u){return 'user_'+u;}
   function getUserData(u){return JSON.parse(localStorage.getItem(userKey(u))); }
@@ -344,7 +447,7 @@
   function addHistoryEntry(action, details){
     if(!currentUser) return;
     let data=getUserData(currentUser);
-    if(!data) data = {password:'', expenses:[], history:[]};
+    if(!data) data = {password:'', expenses:[], incomes:[], history:[]};
     if(!data.history) data.history=[];
     const timestamp=new Date().toLocaleString();
     data.history.push({timestamp, action, details});
@@ -371,16 +474,16 @@
           if(h.details){
             html += `<div class="history-details">`;
             if(h.details.before){
-              html += `<div class="history-before"><strong>Before:</strong> Date: ${escapeHtml(h.details.before.date)}, Category: ${escapeHtml(h.details.before.category)}, Name: ${escapeHtml(h.details.before.name)}, Price: $${h.details.before.price.toFixed(2)}</div>`;
+              html += `<div class="history-before"><strong>Before:</strong> Date: ${escapeHtml(h.details.before.date)}, Category: ${escapeHtml(h.details.before.category)}, Name: ${escapeHtml(h.details.before.name)}, Amount: $${h.details.before.price.toFixed(2)}</div>`;
             }
             if(h.details.after){
-              html += `<div class="history-after"><strong>After:</strong> Date: ${escapeHtml(h.details.after.date)}, Category: ${escapeHtml(h.details.after.category)}, Name: ${escapeHtml(h.details.after.name)}, Price: $${h.details.after.price.toFixed(2)}</div>`;
+              html += `<div class="history-after"><strong>After:</strong> Date: ${escapeHtml(h.details.after.date)}, Category: ${escapeHtml(h.details.after.category)}, Name: ${escapeHtml(h.details.after.name)}, Amount: $${h.details.after.price.toFixed(2)}</div>`;
             }
             if(h.details.deleted){
-              html += `<div class="history-before"><strong>Deleted:</strong> Date: ${escapeHtml(h.details.deleted.date)}, Category: ${escapeHtml(h.details.deleted.category)}, Name: ${escapeHtml(h.details.deleted.name)}, Price: $${h.details.deleted.price.toFixed(2)}</div>`;
+              html += `<div class="history-before"><strong>Deleted:</strong> Date: ${escapeHtml(h.details.deleted.date)}, Category: ${escapeHtml(h.details.deleted.category)}, Name: ${escapeHtml(h.details.deleted.name)}, Amount: $${h.details.deleted.price.toFixed(2)}</div>`;
             }
             if(h.details.added){
-              html += `<div class="history-after"><strong>Added:</strong> Date: ${escapeHtml(h.details.added.date)}, Category: ${escapeHtml(h.details.added.category)}, Name: ${escapeHtml(h.details.added.name)}, Price: $${h.details.added.price.toFixed(2)}</div>`;
+              html += `<div class="history-after"><strong>Added:</strong> Date: ${escapeHtml(h.details.added.date)}, Category: ${escapeHtml(h.details.added.category)}, Name: ${escapeHtml(h.details.added.name)}, Amount: $${h.details.added.price.toFixed(2)}</div>`;
             }
             html += `</div>`;
           }
@@ -398,7 +501,7 @@
     const u=document.getElementById('signupUser').value.trim(), p=document.getElementById('signupPass').value;
     if(!u||!p)return alert('Fill in both fields');
     if(localStorage.getItem(userKey(u)))return alert('Username already exists');
-    setUserData(u,{password:p,expenses:[],history:[]}); alert('Account created!'); signupCard.style.display='none'; loginCard.style.display='block';
+    setUserData(u,{password:p,expenses:[],incomes:[],history:[]}); alert('Account created!'); signupCard.style.display='none'; loginCard.style.display='block';
   };
 
   loginBtn.onclick=()=>{
@@ -414,17 +517,106 @@
   openTracker.onclick=()=>{homeCard.style.display='none'; trackerCard.style.display='block'; renderExpenses();};
   backHomeBtn.onclick=()=>{trackerCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
+  openIncomeTracker.onclick=()=>{homeCard.style.display='none'; incomeTrackerCard.style.display='block'; renderIncomes();};
+  backHomeFromIncomeBtn.onclick=()=>{incomeTrackerCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
+
   settingsBtn.onclick=()=>{homeCard.style.display='none'; settingsCard.style.display='block';};
   backSettingsBtn.onclick=()=>{settingsCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
   showGraphBtn.onclick=()=>{trackerCard.style.display='none'; graphSection.style.display='block'; updateGraph();};
   backTrackerBtn.onclick=()=>{graphSection.style.display='none'; trackerCard.style.display='block';};
 
+  showIncomeGraphBtn.onclick=()=>{incomeTrackerCard.style.display='none'; incomeGraphSection.style.display='block'; updateIncomeGraph();};
+  backIncomeTrackerBtn.onclick=()=>{incomeGraphSection.style.display='none'; incomeTrackerCard.style.display='block';};
+
   backTableBtn.onclick=()=>{tableCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
   taskManagerBtn.onclick=()=>{homeCard.style.display='none'; taskManagerCard.style.display='block';};
   backTaskManagerBtn.onclick=()=>{taskManagerCard.style.display='none'; homeCard.style.display='block'; renderHistory();};
 
+  // AUTOCOMPLETE FUNCTIONS FOR EXPENSE CATEGORIES
+  function getUniqueCategories(){
+    if(!currentUser) return [];
+    const data=getUserData(currentUser);
+    if(!data || !data.expenses) return [];
+    const categories = data.expenses.map(e=>e.category);
+    return [...new Set(categories)].sort();
+  }
+
+  function showCategorySuggestions(value){
+    const categories = getUniqueCategories();
+    const filtered = value ? categories.filter(c=>c.toLowerCase().startsWith(value.toLowerCase())) : categories;
+    
+    if(filtered.length === 0){
+      categorySuggestions.style.display='none';
+      return;
+    }
+    
+    categorySuggestions.innerHTML = filtered.map(cat=>
+      `<div class="autocomplete-suggestion" onclick="selectCategory('${escapeHtml(cat)}')">${escapeHtml(cat)}</div>`
+    ).join('');
+    categorySuggestions.style.display='block';
+  }
+
+  window.selectCategory = function(cat){
+    categoryInput.value = cat;
+    categorySuggestions.style.display='none';
+  };
+
+  categoryInput.addEventListener('focus', ()=>{
+    showCategorySuggestions(categoryInput.value);
+  });
+
+  categoryInput.addEventListener('input', ()=>{
+    showCategorySuggestions(categoryInput.value);
+  });
+
+  categoryInput.addEventListener('blur', ()=>{
+    setTimeout(()=>categorySuggestions.style.display='none', 200);
+  });
+
+  // AUTOCOMPLETE FUNCTIONS FOR INCOME SOURCES
+  function getUniqueSources(){
+    if(!currentUser) return [];
+    const data=getUserData(currentUser);
+    if(!data || !data.incomes) return [];
+    const sources = data.incomes.map(e=>e.category);
+    return [...new Set(sources)].sort();
+  }
+
+  function showSourceSuggestions(value){
+    const sources = getUniqueSources();
+    const filtered = value ? sources.filter(c=>c.toLowerCase().startsWith(value.toLowerCase())) : sources;
+    
+    if(filtered.length === 0){
+      incomeSourceSuggestions.style.display='none';
+      return;
+    }
+    
+    incomeSourceSuggestions.innerHTML = filtered.map(src=>
+      `<div class="autocomplete-suggestion" onclick="selectSource('${escapeHtml(src)}')">${escapeHtml(src)}</div>`
+    ).join('');
+    incomeSourceSuggestions.style.display='block';
+  }
+
+  window.selectSource = function(src){
+    incomeCategoryInput.value = src;
+    incomeSourceSuggestions.style.display='none';
+  };
+
+  incomeCategoryInput.addEventListener('focus', ()=>{
+    showSourceSuggestions(incomeCategoryInput.value);
+  });
+
+  incomeCategoryInput.addEventListener('input', ()=>{
+    showSourceSuggestions(incomeCategoryInput.value);
+  });
+
+  incomeCategoryInput.addEventListener('blur', ()=>{
+    setTimeout(()=>incomeSourceSuggestions.style.display='none', 200);
+  });
+
+  // EXPENSE FUNCTIONS
   addExpenseBtn.onclick=()=>{
     if(!currentUser)return;
     const d=dateInput.value, cat=categoryInput.value.trim(), name=nameInput.value.trim(), price=parseFloat(priceInput.value);
@@ -484,6 +676,67 @@
     }
   };
 
+  // INCOME FUNCTIONS
+  addIncomeBtn.onclick=()=>{
+    if(!currentUser)return;
+    const d=incomeDateInput.value, cat=incomeCategoryInput.value.trim(), name=incomeNameInput.value.trim(), amount=parseFloat(incomeAmountInput.value);
+    if(!d||!cat||!name||isNaN(amount))return alert('Fill all fields correctly');
+    let data=getUserData(currentUser);
+    if(!data.incomes) data.incomes = [];
+    if(!data.history) data.history = [];
+    if(editingIncomeIndex!==null){
+      const inc=data.incomes.find(inc=>inc.id==editingIncomeIndex);
+      const before = {date: inc.date, category: inc.category, name: inc.name, price: inc.amount};
+      inc.date=d; inc.category=cat; inc.name=name; inc.amount=amount;
+      const after = {date: d, category: cat, name: name, price: amount};
+      const timestamp=new Date().toLocaleString();
+      data.history.push({timestamp, action: 'Edited Income', details: {before, after}});
+      editingIncomeIndex=null; addIncomeBtn.textContent='Add Income';
+    }else{
+      const id=Date.now()+Math.random();
+      data.incomes.push({id,date:d,category:cat,name:name,amount:amount});
+      const added = {date: d, category: cat, name: name, price: amount};
+      const timestamp=new Date().toLocaleString();
+      data.history.push({timestamp, action: 'Added Income', details: {added}});
+    }
+    setUserData(currentUser,data); renderIncomes(); updateIncomeGraph();
+    incomeDateInput.value=''; incomeCategoryInput.value=''; incomeNameInput.value=''; incomeAmountInput.value='';
+  };
+
+  window.editIncome=function(id){
+    if(editingIncomeIndex!==null) return alert('Finish current update first!');
+    const data=getUserData(currentUser); if(!data) return;
+    const e=data.incomes.find(inc=>inc.id==id); if(!e)return;
+    incomeDateInput.value=e.date; incomeCategoryInput.value=e.category; incomeNameInput.value=e.name; incomeAmountInput.value=e.amount;
+    editingIncomeIndex=id; addIncomeBtn.textContent='Update Income';
+  };
+
+  window.deleteIncome=function(id){
+    if(editingIncomeIndex!==null) return alert('Finish current update first!');
+    let data=getUserData(currentUser); if(!data) return;
+    if(!data.history) data.history = [];
+    const e=data.incomes.find(inc=>inc.id==id);
+    if(confirm('Delete this income?')){
+      data.incomes=data.incomes.filter(inc=>inc.id!=id);
+      const deleted = {date: e.date, category: e.category, name: e.name, price: e.amount};
+      const timestamp=new Date().toLocaleString();
+      data.history.push({timestamp, action: 'Deleted Income', details: {deleted}});
+      setUserData(currentUser,data); renderIncomes();
+    }
+  };
+
+  deleteAllIncomeBtn.onclick=()=>{
+    if(!currentUser)return;
+    if(confirm('Delete ALL income?')){
+      let data=getUserData(currentUser);
+      if(!data.history) data.history = [];
+      data.incomes=[];
+      const timestamp=new Date().toLocaleString();
+      data.history.push({timestamp, action: 'Deleted All Income', details: null});
+      setUserData(currentUser,data); editingIncomeIndex=null; addIncomeBtn.textContent='Add Income'; renderIncomes();
+    }
+  };
+
   deleteHistoryBtn.onclick=()=>{
     if(!currentUser)return;
     if(confirm('Delete ALL history?')){
@@ -499,8 +752,8 @@
     if(!currentUser)return;
     if(confirm('DELETE ACCOUNT?')){
       localStorage.removeItem(userKey(currentUser));
-      currentUser=null; editingIndex=null; addExpenseBtn.textContent='Add Expense'; chart&&(chart.destroy(),chart=null);
-      loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; settingsCard.style.display='none'; graphSection.style.display='none'; tableCard.style.display='none'; taskManagerCard.style.display='none';
+      currentUser=null; editingIndex=null; editingIncomeIndex=null; addExpenseBtn.textContent='Add Expense'; addIncomeBtn.textContent='Add Income'; chart&&(chart.destroy(),chart=null); incomeChartObj&&(incomeChartObj.destroy(),incomeChartObj=null);
+      loginCard.style.display='block'; homeCard.style.display='none'; trackerCard.style.display='none'; incomeTrackerCard.style.display='none'; settingsCard.style.display='none'; graphSection.style.display='none'; incomeGraphSection.style.display='none'; tableCard.style.display='none'; taskManagerCard.style.display='none';
     }
   };
 
@@ -512,7 +765,7 @@
       <td>${escapeHtml(e.date)}</td>
       <td>${escapeHtml(e.category)}</td>
       <td>${escapeHtml(e.name)}</td>
-      <td style="text-align:right">$${e.price.toFixed(2)}</td>
+      <td style="text-align:right">${e.price.toFixed(2)}</td>
       <td>
         <button class="btn" style="background:#f1c40f;color:#111;padding:6px 10px" onclick="editExpense('${e.id}')" ${editingIndex!==null?'disabled':''}>Edit</button>
         <button class="btn" style="background:#e74c3c;padding:6px 10px" onclick="deleteExpense('${e.id}')" ${editingIndex!==null?'disabled':''}>Delete</button>
@@ -522,6 +775,25 @@
     updateGraph();
   }
 
+  function renderIncomes(){
+    if(!currentUser)return;
+    const data=getUserData(currentUser)||{incomes:[]};
+    if(!data.incomes) data.incomes = [];
+    const sorted=data.incomes.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    incomesTbody.innerHTML=sorted.map(e=>`<tr>
+      <td>${escapeHtml(e.date)}</td>
+      <td>${escapeHtml(e.category)}</td>
+      <td>${escapeHtml(e.name)}</td>
+      <td style="text-align:right">${e.amount.toFixed(2)}</td>
+      <td>
+        <button class="btn" style="background:#f1c40f;color:#111;padding:6px 10px" onclick="editIncome('${e.id}')" ${editingIncomeIndex!==null?'disabled':''}>Edit</button>
+        <button class="btn" style="background:#e74c3c;padding:6px 10px" onclick="deleteIncome('${e.id}')" ${editingIncomeIndex!==null?'disabled':''}>Delete</button>
+      </td>
+    </tr>`).join('');
+    if(sorted.length===0)incomesTbody.innerHTML=`<tr><td colspan="5" class="muted">No income yet</td></tr>`;
+    updateIncomeGraph();
+  }
+
   function updateGraph(filtered){
     if(!currentUser)return;
     const data=getUserData(currentUser); if(!data)return;
@@ -529,6 +801,16 @@
     if(filtered)list=filtered;
     chart&&chart.destroy();
     chart=new Chart(expenseChart.getContext('2d'),{type:'line',data:{labels:list.map(e=>e.date),datasets:[{label:'Expense ($)',data:list.map(e=>e.price),fill:false,borderColor:'#3498db',tension:0.1}]},options:{responsive:true,plugins:{legend:{display:true}}}});
+  }
+
+  function updateIncomeGraph(filtered){
+    if(!currentUser)return;
+    const data=getUserData(currentUser); if(!data)return;
+    if(!data.incomes) data.incomes = [];
+    let list=data.incomes.map(e=>({date:e.date,amount:e.amount}));
+    if(filtered)list=filtered;
+    incomeChartObj&&incomeChartObj.destroy();
+    incomeChartObj=new Chart(incomeChart.getContext('2d'),{type:'line',data:{labels:list.map(e=>e.date),datasets:[{label:'Income ($)',data:list.map(e=>e.amount),fill:false,borderColor:'#27ae60',tension:0.1}]},options:{responsive:true,plugins:{legend:{display:true}}}});
   }
 
   applyFilterBtn.onclick=()=>{
@@ -542,6 +824,18 @@
     updateGraph(filtered);
   };
 
+  applyIncomeFilterBtn.onclick=()=>{
+    if(!currentUser)return;
+    const from=incomeFromDate.value?new Date(incomeFromDate.value):null;
+    const to=incomeToDate.value?new Date(incomeToDate.value):null;
+    const data=getUserData(currentUser); if(!data)return;
+    if(!data.incomes) data.incomes = [];
+    const filtered=data.incomes.filter(e=>{
+      const d=new Date(e.date); if(from && d<from) return false; if(to && d>to) return false; return true;
+    });
+    updateIncomeGraph(filtered);
+  };
+
   function renderFullTable(){
     if(!currentUser)return;
     const data=getUserData(currentUser)||{expenses:[]};
@@ -551,7 +845,7 @@
         <td>${escapeHtml(e.date)}</td>
         <td>${escapeHtml(e.category)}</td>
         <td>${escapeHtml(e.name)}</td>
-        <td style="text-align:right">$${e.price.toFixed(2)}</td>
+        <td style="text-align:right">${e.price.toFixed(2)}</td>
       </tr>
     `).join('');
     if(sorted.length===0)fullTableTbody.innerHTML=`<tr><td colspan="4" class="muted">No expenses yet</td></tr>`;
