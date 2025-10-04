@@ -139,6 +139,42 @@
     bottom: 20px;
     left: 20px;
   }
+
+  /* History Entry Styles */
+  .history-entry {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    text-align: left;
+  }
+  .history-timestamp {
+    font-weight: bold;
+    color: #3498db;
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+  .history-action {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  .history-details {
+    background: #fff;
+    border-left: 3px solid #3498db;
+    padding: 8px;
+    margin-top: 5px;
+    font-size: 12px;
+  }
+  .history-before {
+    color: #e74c3c;
+    margin: 3px 0;
+  }
+  .history-after {
+    color: #27ae60;
+    margin: 3px 0;
+  }
   
 </style>
 </head>
@@ -305,13 +341,13 @@
   function escapeHtml(t){return t.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
 
   // --- HISTORY FUNCTIONS ---
-  function addHistoryEntry(action){
+  function addHistoryEntry(action, details){
     if(!currentUser) return;
     let data=getUserData(currentUser);
     if(!data) data = {password:'', expenses:[], history:[]};
     if(!data.history) data.history=[];
     const timestamp=new Date().toLocaleString();
-    data.history.push(`${timestamp} - ${action}`);
+    data.history.push({timestamp, action, details});
     setUserData(currentUser,data);
   }
 
@@ -323,7 +359,35 @@
     } else {
       // show newest first
       const reversed = data.history.slice().reverse();
-      historyLog.innerHTML = reversed.map(h=>`<p>${escapeHtml(h)}</p>`).join('');
+      historyLog.innerHTML = reversed.map(h=>{
+        let html = `<div class="history-entry">`;
+        html += `<div class="history-timestamp">${escapeHtml(h.timestamp || h)}</div>`;
+        
+        if(typeof h === 'string'){
+          // Old format compatibility
+          html += `<div class="history-action">${escapeHtml(h)}</div>`;
+        } else {
+          html += `<div class="history-action">${escapeHtml(h.action)}</div>`;
+          if(h.details){
+            html += `<div class="history-details">`;
+            if(h.details.before){
+              html += `<div class="history-before"><strong>Before:</strong> Date: ${escapeHtml(h.details.before.date)}, Category: ${escapeHtml(h.details.before.category)}, Name: ${escapeHtml(h.details.before.name)}, Price: $${h.details.before.price.toFixed(2)}</div>`;
+            }
+            if(h.details.after){
+              html += `<div class="history-after"><strong>After:</strong> Date: ${escapeHtml(h.details.after.date)}, Category: ${escapeHtml(h.details.after.category)}, Name: ${escapeHtml(h.details.after.name)}, Price: $${h.details.after.price.toFixed(2)}</div>`;
+            }
+            if(h.details.deleted){
+              html += `<div class="history-before"><strong>Deleted:</strong> Date: ${escapeHtml(h.details.deleted.date)}, Category: ${escapeHtml(h.details.deleted.category)}, Name: ${escapeHtml(h.details.deleted.name)}, Price: $${h.details.deleted.price.toFixed(2)}</div>`;
+            }
+            if(h.details.added){
+              html += `<div class="history-after"><strong>Added:</strong> Date: ${escapeHtml(h.details.added.date)}, Category: ${escapeHtml(h.details.added.category)}, Name: ${escapeHtml(h.details.added.name)}, Price: $${h.details.added.price.toFixed(2)}</div>`;
+            }
+            html += `</div>`;
+          }
+        }
+        html += `</div>`;
+        return html;
+      }).join('');
     }
   }
 
@@ -369,15 +433,18 @@
     if(!data.history) data.history = [];
     if(editingIndex!==null){
       const exp=data.expenses.find(exp=>exp.id==editingIndex);
+      const before = {date: exp.date, category: exp.category, name: exp.name, price: exp.price};
       exp.date=d; exp.category=cat; exp.name=name; exp.price=price;
+      const after = {date: d, category: cat, name: name, price: price};
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Edited expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
+      data.history.push({timestamp, action: 'Edited Expense', details: {before, after}});
       editingIndex=null; addExpenseBtn.textContent='Add Expense';
     }else{
       const id=Date.now()+Math.random();
       data.expenses.push({id,date:d,category:cat,name:name,price:price});
+      const added = {date: d, category: cat, name: name, price: price};
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Added expense: ${name} - $${price.toFixed(2)} in category ${cat} on ${d}`);
+      data.history.push({timestamp, action: 'Added Expense', details: {added}});
     }
     setUserData(currentUser,data); renderExpenses(); updateGraph();
     dateInput.value=''; categoryInput.value=''; nameInput.value=''; priceInput.value='';
@@ -398,8 +465,9 @@
     const e=data.expenses.find(exp=>exp.id==id);
     if(confirm('Delete this expense?')){
       data.expenses=data.expenses.filter(exp=>exp.id!=id);
+      const deleted = {date: e.date, category: e.category, name: e.name, price: e.price};
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Deleted expense: ${e.name} - $${e.price.toFixed(2)} in category ${e.category} on ${e.date}`);
+      data.history.push({timestamp, action: 'Deleted Expense', details: {deleted}});
       setUserData(currentUser,data); renderExpenses();
     }
   };
@@ -411,7 +479,7 @@
       if(!data.history) data.history = [];
       data.expenses=[];
       const timestamp=new Date().toLocaleString();
-      data.history.push(`${timestamp} - Deleted all expenses`);
+      data.history.push({timestamp, action: 'Deleted All Expenses', details: null});
       setUserData(currentUser,data); editingIndex=null; addExpenseBtn.textContent='Add Expense'; renderExpenses();
     }
   };
